@@ -1,39 +1,29 @@
 package model.ast;
 
-import model.type.ArrayType;
+import model.type.Types;
 
 /**
  * Created by Majid Vaghari on 7/23/2016.
  */
 public class Function extends AbstractNode {
-    private ArrayType inputType;
-    private ArrayType returnType;
-    private String    name;
+    private Types  returnType;
+    private String name;
 
     public Function(Node parent) {
         super(parent);
     }
 
-    public Function(Node parent, ArrayType inputType, ArrayType returnType, String name) {
+    public Function(Node parent, Types returnType, String name) {
         super(parent);
-        this.inputType = inputType;
         this.returnType = returnType;
         this.name = name;
     }
 
-    public ArrayType getInputType() {
-        return inputType;
-    }
-
-    public void setInputType(ArrayType inputType) {
-        this.inputType = inputType;
-    }
-
-    public ArrayType getReturnType() {
+    public Types getReturnType() {
         return returnType;
     }
 
-    public void setReturnType(ArrayType returnType) {
+    public void setReturnType(Types returnType) {
         this.returnType = returnType;
     }
 
