@@ -13,4 +13,6 @@ public interface Node {
     void addChildren(Collection<? extends Node> nodes);
 
     Collection<? extends Node> getChildren();
+
+    String gen();
 }
