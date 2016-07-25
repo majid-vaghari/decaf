@@ -14,14 +14,14 @@ public class SymbolTable {
     }
 
     private final Map<String, Descriptor> table;
-    private int                     level;
+    private       int                     level;
 
     private SymbolTable() {
         this.table = new HashMap<>();
         this.level = 0;
     }
 
-    public final SymbolTable getInstance() {
+    public static SymbolTable getInstance() {
         return SYMBOL_TABLE;
     }
 

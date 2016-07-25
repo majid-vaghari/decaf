@@ -1,21 +1,21 @@
 package model.ast;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 
 /**
  * Created by Majid Vaghari on 7/23/2016.
  */
 public abstract class AbstractNode implements Node {
     private final Node                                      parent;
-    private       Collection<Node>                          children;
+    private       List<Node>                                children;
     private       java.util.function.Function<Node, String> generate;
 
     public AbstractNode(Node parent) {
         this(parent, new ArrayList<>());
     }
 
-    protected AbstractNode(Node parent, Collection<Node> children) {
+    protected AbstractNode(Node parent, List<Node> children) {
         this.parent = parent;
         this.children = children;
     }
@@ -39,12 +39,12 @@ public abstract class AbstractNode implements Node {
     }
 
     @Override
-    public void addChildren(Collection<? extends Node> nodes) {
+    public void addChildren(List<? extends Node> nodes) {
         children.addAll(nodes);
     }
 
     @Override
-    public Collection<Node> getChildren() {
+    public List<Node> getChildren() {
         return children;
     }
 
