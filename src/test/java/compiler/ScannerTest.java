@@ -11,7 +11,7 @@ import java.io.IOException;
 public class ScannerTest {
     @Test
     public void finalSample() throws IOException {
-        Scanner scanner = new Scanner("src/test/resources/scanner/badliteral2.l");
+        Scanner scanner = new Scanner("src/test/resources/tests/scanner/comment.l");
         Token   token   = null;
         do {
             try {

@@ -16,16 +16,7 @@ public class Parser {
         this.lexer = new Scanner(filePath);
     }
 
-    public void parse() throws UnexpectedTokenException, IOException {
-        current = lexer.nextToken();
-        program();
-    }
-
-    private boolean isTypeOrVoid(Token token) {
-        return isType(token) || token instanceof Keyword && ((Keyword) token).getKeyword() == Keywords.VOID;
-    }
-
-    private boolean isType(Token token) {
+    private static boolean isType(Token token) {
         if (token instanceof Keyword) {
             Keywords k = ((Keyword) token).getKeyword();
             if (k == Keywords.BOOLEAN || k == Keywords.CHAR || k == Keywords.FLOAT || k == Keywords.INT)
@@ -35,27 +26,36 @@ public class Parser {
         return false;
     }
 
-    private boolean isArithOp1(Token token) {
+    private static boolean isArithOp1(Token token) {
         return (token instanceof Symbol) &&
                (((Symbol) token).getSymbol() == Symbols.MULT || ((Symbol) token).getSymbol() == Symbols.MOD ||
                 ((Symbol) token).getSymbol() == Symbols.DIV);
     }
 
-    private boolean isArithOp2(Token token) {
+    private static boolean isArithOp2(Token token) {
         return (token instanceof Symbol) &&
                (((Symbol) token).getSymbol() == Symbols.PLUS || ((Symbol) token).getSymbol() == Symbols.MINUS);
 
     }
 
-    private boolean isRelOp(Token token) {
+    private static boolean isRelOp(Token token) {
         return (token instanceof Symbol) &&
                (((Symbol) token).getSymbol() == Symbols.LT || ((Symbol) token).getSymbol() == Symbols.LTEQ
                 || ((Symbol) token).getSymbol() == Symbols.GT || ((Symbol) token).getSymbol() == Symbols.GTEQ);
     }
 
-    private boolean isEqOp(Token token) {
+    private static boolean isEqOp(Token token) {
         return (token instanceof Symbol) &&
                (((Symbol) token).getSymbol() == Symbols.NOTEQ || ((Symbol) token).getSymbol() == Symbols.EQEQ);
+    }
+
+    public void parse() throws UnexpectedTokenException, IOException {
+        current = lexer.nextToken();
+        program();
+    }
+
+    private boolean isTypeOrVoid(Token token) {
+        return isType(token) || token instanceof Keyword && ((Keyword) token).getKeyword() == Keywords.VOID;
     }
 
     private void checkTerminal(boolean predicate) throws UnexpectedTokenException, IOException {
