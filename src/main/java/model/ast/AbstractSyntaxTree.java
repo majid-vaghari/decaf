@@ -24,7 +24,7 @@ public final class AbstractSyntaxTree {
         return ABSTRACT_SYNTAX_TREE;
     }
 
-    private List<Node> getNodes() {
+    public List<Node> getNodes() {
         return nodes;
     }
 
