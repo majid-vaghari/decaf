@@ -1,5 +1,6 @@
 package compiler;
 
+import model.Token;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -8,6 +9,19 @@ import java.io.IOException;
  * Created by Majid Vaghari on 4/3/2016.
  */
 public class ScannerTest {
+    @Test
+    public void finalSample() throws IOException {
+        Scanner scanner = new Scanner("src/test/resources/scanner/badliteral2.l");
+        Token   token   = null;
+        do {
+            try {
+                token = scanner.nextToken();
+                System.out.println(token != null ? token : "");
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+        } while (token != null);
+    }
     @Test
     public void sample() throws IOException {
         Scanner scanner = new Scanner("src/test/resources/sampleinput.decaf");

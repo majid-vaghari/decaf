@@ -15,7 +15,7 @@ public class ParserTest {
     @Before
     public void initialize() {
         try {
-            parser = new Parser("src/test/resources/1.l");
+            parser = new Parser("src/test/resources/parser/b1.l");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -27,8 +27,7 @@ public class ParserTest {
             parser.parse();
             System.out.println("Ok, bye!");
         } catch (UnexpectedTokenException e) {
-            System.err.println(e.getMessage());
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         } catch (IOException e) {
             e.printStackTrace();
         }
