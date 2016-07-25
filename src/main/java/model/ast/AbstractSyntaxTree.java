@@ -1,7 +1,7 @@
 package model.ast;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 
 /**
  * Created by Majid Vaghari on 7/22/2016.
@@ -13,8 +13,8 @@ public final class AbstractSyntaxTree {
         ABSTRACT_SYNTAX_TREE = new AbstractSyntaxTree();
     }
 
-    private Collection<Node> nodes;
-    private Node             root;
+    private List<Node> nodes;
+    private Node       root;
 
     private AbstractSyntaxTree() {
         nodes = new ArrayList<>();
@@ -24,7 +24,7 @@ public final class AbstractSyntaxTree {
         return ABSTRACT_SYNTAX_TREE;
     }
 
-    private Collection<Node> getNodes() {
+    private List<Node> getNodes() {
         return nodes;
     }
 
