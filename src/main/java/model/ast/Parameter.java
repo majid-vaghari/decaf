@@ -3,16 +3,16 @@ package model.ast;
 import model.type.Types;
 
 /**
- * Created by Majid Vaghari on 7/25/2016.
+ * Created by Majid Vaghari on 7/26/2016.
  */
-public class VarList extends AbstractNode {
+public class Parameter extends AbstractNode {
     private Types type;
 
-    public VarList(VariableDeclaration parent) {
+    public Parameter(Node parent) {
         super(parent);
     }
 
-    public VarList(VariableDeclaration parent, Types type) {
+    public Parameter(Node parent, Types type) {
         super(parent);
         this.type = type;
     }

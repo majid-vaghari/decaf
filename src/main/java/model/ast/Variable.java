@@ -12,7 +12,7 @@ public class Variable extends AbstractNode {
 
     public Variable(VarList parent, int dimensionLength) {
         super(parent);
-        this.dimensionLength = dimensionLength > 0 && !(parent instanceof ParamList) ? dimensionLength : 1;
+        this.dimensionLength = dimensionLength > 0 ? dimensionLength : 1;
     }
 
     public boolean isArray() {

@@ -25,9 +25,17 @@ public class SymbolTable {
         return SYMBOL_TABLE;
     }
 
+    public void openScope() {
+        level++;
+    }
+
+    public void closeScope() {
+        getTable().entrySet().removeIf(e -> e.getValue().getLevel() == level);
+        level--;
+    }
+
     public Map<String, Descriptor> getTable() {
         return table;
     }
-
 
 }

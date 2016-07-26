@@ -33,6 +33,8 @@ public final class AbstractSyntaxTree {
     }
 
     public void setRoot(Node root) {
+        nodes.clear();
+        nodes.add(root);
         this.root = root;
     }
 }

@@ -1,6 +1,11 @@
 package compiler;
 
 import model.*;
+import model.ast.AbstractSyntaxTree;
+import model.ast.Block;
+import model.ast.Function;
+import model.ast.Node;
+import model.type.Types;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -10,7 +15,8 @@ import java.io.IOException;
  */
 public class Parser {
     private final Scanner lexer;
-    private Token current = null;
+    private Token current     = null;
+    private Node  currentNode = null;
 
     public Parser(String filePath) throws FileNotFoundException {
         this.lexer = new Scanner(filePath);
@@ -51,10 +57,12 @@ public class Parser {
 
     public void parse() throws UnexpectedTokenException, IOException {
         current = lexer.nextToken();
+        currentNode = new Block(null);
+        AbstractSyntaxTree.getInstance().setRoot(currentNode); // set the root node of the syntax tree
         program();
     }
 
-    private boolean isTypeOrVoid(Token token) {
+    private boolean isReturnType(Token token) {
         return isType(token) || token instanceof Keyword && ((Keyword) token).getKeyword() == Keywords.VOID;
     }
 
@@ -67,7 +75,7 @@ public class Parser {
     }
 
     private void program() throws UnexpectedTokenException, IOException {
-        if (isTypeOrVoid(current)) {
+        if (isReturnType(current)) {
             subprogram();
             program();
         } else if (current == null) {
@@ -79,12 +87,26 @@ public class Parser {
 
     private void subprogram() throws UnexpectedTokenException, IOException {
         if (isType(current)) {
+            Types type = Types.parse(current.getValue());
             current = lexer.nextToken();
-            checkTerminal(current instanceof Identifier);
-            afterId();
+            String name;
+            if (current instanceof Identifier) {
+                name = current.getValue();
+                current = lexer.nextToken();
+            } else {
+                throw new UnexpectedTokenException(current);
+            }
+            afterId(type, name);
         } else if (current instanceof Keyword && ((Keyword) current).getKeyword() == Keywords.VOID) {
             current = lexer.nextToken();
-            checkTerminal(current instanceof Identifier);
+            String name;
+            if (current instanceof Identifier) {
+                name = current.getValue();
+                current = lexer.nextToken();
+            } else {
+                throw new UnexpectedTokenException(current);
+            }
+            addNode(new Function(currentNode, Types.VOID, name));
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LPAREN);
             args();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RPAREN);
@@ -94,7 +116,13 @@ public class Parser {
         }
     }
 
-    private void afterId() throws UnexpectedTokenException, IOException {
+    private void addNode(Node node) {
+        currentNode = node;
+        AbstractSyntaxTree.getInstance().getNodes().add(currentNode);
+    }
+
+    private void afterId(Types type, String name) throws UnexpectedTokenException, IOException {
+
         if (current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LPAREN) {
             current = lexer.nextToken();
             args();
