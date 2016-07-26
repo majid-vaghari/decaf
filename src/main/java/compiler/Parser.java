@@ -283,25 +283,36 @@ public class Parser {
             goToParentNode();
             e();
         } else if (current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LBRACE) {
+            SymbolTable.getInstance().openScope();
             block();
+            SymbolTable.getInstance().closeScope();
             e();
         } else if (current instanceof Keyword && ((Keyword) current).getKeyword() == Keywords.IF) {
             current = lexer.nextToken();
+            addNode(new IfStatement((Block) currentNode));
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LPAREN);
-            expr();
+            expr(); // TODO
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RPAREN);
+            SymbolTable.getInstance().openScope();
             block();
+            SymbolTable.getInstance().closeScope();
             f();
+            goToParentNode();
             e();
         } else if (current instanceof Keyword && ((Keyword) current).getKeyword() == Keywords.WHILE) {
             current = lexer.nextToken();
+            addNode(new WhileStatement((Block) currentNode));
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LPAREN);
             expr();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RPAREN);
+            SymbolTable.getInstance().openScope();
             block();
+            SymbolTable.getInstance().closeScope();
+            goToParentNode();
             e();
         } else if (current instanceof Keyword && ((Keyword) current).getKeyword() == Keywords.FOR) {
             current = lexer.nextToken();
+            addNode(new ForStatement((Block) currentNode));
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LPAREN);
             assignment();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
@@ -309,35 +320,70 @@ public class Parser {
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
             assignment();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RPAREN);
+            SymbolTable.getInstance().openScope();
             block();
+            SymbolTable.getInstance().closeScope();
+            goToParentNode();
             e();
         } else if (current instanceof Keyword && ((Keyword) current).getKeyword() == Keywords.RETURN) {
             current = lexer.nextToken();
+            addNode(new ReturnStatement((Block) currentNode));
             e3();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
+            goToParentNode();
             e();
         } else if (current instanceof Keyword && (((Keyword) current).getKeyword() == Keywords.BREAK
                                                   || ((Keyword) current).getKeyword() == Keywords.CONTINUE)) {
+            if (((Keyword) current).getKeyword() == Keywords.BREAK)
+                addNode(new BreakStatement((Block) currentNode));
+            else if (((Keyword) current).getKeyword() == Keywords.CONTINUE)
+                addNode(new ContinueStatement((Block) currentNode));
             current = lexer.nextToken();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
+            goToParentNode();
             e();
         } else if (current instanceof Keyword && (((Keyword) current).getKeyword() == Keywords.READCHAR
                                                   || ((Keyword) current).getKeyword() == Keywords.READFLOAT
                                                   || ((Keyword) current).getKeyword() == Keywords.READINT)) {
+            switch (((Keyword) current).getKeyword()) {
+                case READCHAR:
+                    addNode(new ReadStatement((Block) currentNode, Types.CHARACTER));
+                    break;
+                case READFLOAT:
+                    addNode(new ReadStatement((Block) currentNode, Types.FLOAT));
+                    break;
+                case READINT:
+                    addNode(new ReadStatement(((Block) currentNode), Types.INTEGER));
+                    break;
+            }
             current = lexer.nextToken();
             location();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
+            goToParentNode();
             e();
         } else if (current instanceof Keyword && (((Keyword) current).getKeyword() == Keywords.WRITECHAR
                                                   || ((Keyword) current).getKeyword() == Keywords.WRITEFLOAT
                                                   || ((Keyword) current).getKeyword() == Keywords.WRITEINT)) {
+            switch (((Keyword) current).getKeyword()) {
+                case READCHAR:
+                    addNode(new WriteStatement((Block) currentNode, Types.CHARACTER));
+                    break;
+                case READFLOAT:
+                    addNode(new WriteStatement((Block) currentNode, Types.FLOAT));
+                    break;
+                case READINT:
+                    addNode(new WriteStatement(((Block) currentNode), Types.INTEGER));
+                    break;
+            }
             current = lexer.nextToken();
             expr();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
+            goToParentNode();
             e();
         } else if (current instanceof Identifier) {
+            String name = current.getValue();
             current = lexer.nextToken();
-            e2();
+            e2(name);
             e();
         } else if (current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RBRACE || current == null) {
             // do nothing
@@ -346,13 +392,17 @@ public class Parser {
         }
     }
 
-    private void e2() throws UnexpectedTokenException, IOException {
+    private void e2(String name) throws UnexpectedTokenException, IOException {
         if (current instanceof Symbol) {
             if (((Symbol) current).getSymbol() == Symbols.LPAREN) {
+                if (!SymbolTable.getInstance().getFunction(name).isPresent())
+                    throw new UnexpectedTokenException("Undefined function " + name + " at line: " + current.getLine());
+                addNode(new MethodCall(currentNode));
                 current = lexer.nextToken();
                 i();
                 checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RPAREN);
                 checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
+                goToParentNode();
             } else if (((Symbol) current).getSymbol() == Symbols.LBRACKET
                        || ((Symbol) current).getSymbol() == Symbols.EQ) {
                 k();
@@ -381,7 +431,9 @@ public class Parser {
     private void f() throws UnexpectedTokenException, IOException {
         if (current instanceof Keyword && ((Keyword) current).getKeyword() == Keywords.ELSE) {
             current = lexer.nextToken();
+            SymbolTable.getInstance().openScope();
             block();
+            SymbolTable.getInstance().closeScope();
         } else if (isType(current)
                    || (current instanceof Symbol && (((Symbol) current).getSymbol() == Symbols.LBRACE
                                                      || ((Symbol) current).getSymbol() == Symbols.RBRACE))
