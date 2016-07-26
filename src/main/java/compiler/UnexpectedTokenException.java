@@ -9,4 +9,8 @@ public class UnexpectedTokenException extends Exception {
     public UnexpectedTokenException(Token token) {
         super("Unexpected Token at line " + token.getLine() + " = " + token.getValue());
     }
+
+    public UnexpectedTokenException(String message) {
+        super(message);
+    }
 }

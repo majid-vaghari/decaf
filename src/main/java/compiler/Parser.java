@@ -1,10 +1,9 @@
 package compiler;
 
 import model.*;
-import model.ast.AbstractSyntaxTree;
-import model.ast.Block;
-import model.ast.Function;
-import model.ast.Node;
+import model.ast.*;
+import model.descriptors.DuplicateDefinitionException;
+import model.descriptors.SymbolTable;
 import model.type.Types;
 
 import java.io.FileNotFoundException;
@@ -97,10 +96,18 @@ public class Parser {
             current = lexer.nextToken();
             String name = checkTerminal(current instanceof Identifier).getValue();
             addNode(new Function(currentNode, Types.VOID, name));
+            try {
+                SymbolTable.getInstance().add(currentNode);
+            } catch (DuplicateDefinitionException e) {
+                throw new UnexpectedTokenException(e.getMessage() + " at line: " + current.getLine());
+            }
+            SymbolTable.getInstance().openScope();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LPAREN);
             args();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RPAREN);
             block();
+            SymbolTable.getInstance().closeScope();
+            goToParentNode();
         } else {
             throw new UnexpectedTokenException(current);
         }
@@ -115,9 +122,18 @@ public class Parser {
 
         if (current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LPAREN) {
             current = lexer.nextToken();
+            addNode(new Function(currentNode, type, name));
+            try {
+                SymbolTable.getInstance().add(currentNode);
+            } catch (DuplicateDefinitionException e) {
+                throw new UnexpectedTokenException(e.getMessage() + " at line: " + current.getLine());
+            }
+            SymbolTable.getInstance().openScope();
             args();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RPAREN);
             block();
+            SymbolTable.getInstance().closeScope();
+            goToParentNode();
         } else if (current instanceof Symbol && (((Symbol) current).getSymbol() == Symbols.LBRACKET
                                                  || ((Symbol) current).getSymbol() == Symbols.COMMA
                                                  || ((Symbol) current).getSymbol() == Symbols.SEMICOLON)) {
@@ -169,7 +185,9 @@ public class Parser {
     private void args() throws UnexpectedTokenException, IOException {
         if (isType(current)) {
             // current = lexer.nextToken();
+            addNode(new ParamList((Function) currentNode));
             argList();
+            goToParentNode();
         } else if (current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RPAREN || current == null) {
             // do nothing
         } else {
@@ -177,11 +195,22 @@ public class Parser {
         }
     }
 
+    private void goToParentNode() {
+        currentNode = currentNode.getParent();
+    }
+
     private void argList() throws UnexpectedTokenException, IOException {
         if (isType(current)) {
             Types type = Types.parse(current.getValue());
             current = lexer.nextToken();
             String name = checkTerminal(current instanceof Identifier).getValue();
+            addNode(new Parameter((ParamList) currentNode, type, name));
+            try {
+                SymbolTable.getInstance().add(currentNode);
+            } catch (DuplicateDefinitionException e) {
+                throw new UnexpectedTokenException(e.getMessage() + " at line: " + current.getLine());
+            }
+            goToParentNode();
             moreArg();
         } else {
             throw new UnexpectedTokenException(current);
@@ -201,9 +230,11 @@ public class Parser {
 
     private void block() throws UnexpectedTokenException, IOException {
         if (current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LBRACE) {
+            addNode(new Block(currentNode));
             current = lexer.nextToken();
             e();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RBRACE);
+            goToParentNode();
         } else {
             throw new UnexpectedTokenException(current);
         }

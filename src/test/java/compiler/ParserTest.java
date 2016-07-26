@@ -18,7 +18,7 @@ public class ParserTest {
     @Before
     public void initialize() {
         try {
-            parser = new Parser("src/test/resources/tests/Codegen/exp.l");
+            parser = new Parser("src/test/resources/semantics.l");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
