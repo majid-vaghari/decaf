@@ -1,20 +1,23 @@
 package model.ast;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by Majid Vaghari on 7/25/2016.
  */
 public class Variable extends AbstractNode {
-    private String name;
-    private int    dimensionLength;
+    private String        name;
+    private List<Integer> dimensions;
 
     public Variable(VarList parent) {
-        this(parent, null, 1);
+        this(parent, null);
     }
 
-    public Variable(VarList parent, String name, int dimensionLength) {
+    public Variable(VarList parent, String name) {
         super(parent);
         this.name = name;
-        this.dimensionLength = dimensionLength > 0 ? dimensionLength : 1;
+        this.dimensions = new ArrayList<>();
     }
 
     public String getName() {
@@ -26,10 +29,14 @@ public class Variable extends AbstractNode {
     }
 
     public boolean isArray() {
-        return this.dimensionLength > 1;
+        return !this.dimensions.isEmpty();
     }
 
-    public int getDimensionLength() {
-        return dimensionLength;
+    public List<Integer> getDimensions() {
+        return dimensions;
+    }
+
+    public void addDimension(int dim) {
+        this.dimensions.add(dim);
     }
 }

@@ -137,9 +137,20 @@ public class Parser {
         } else if (current instanceof Symbol && (((Symbol) current).getSymbol() == Symbols.LBRACKET
                                                  || ((Symbol) current).getSymbol() == Symbols.COMMA
                                                  || ((Symbol) current).getSymbol() == Symbols.SEMICOLON)) {
+            addNode(new VariableDeclaration(currentNode));
+            addNode(new VarList((VariableDeclaration) currentNode, type));
+            addNode(new Variable((VarList) currentNode, name));
+            try {
+                SymbolTable.getInstance().add(currentNode);
+            } catch (DuplicateDefinitionException e) {
+                throw new UnexpectedTokenException(e.getMessage() + " at line: " + current.getLine());
+            }
             arrayDec();
+            goToParentNode();
             moreDec();
+            goToParentNode();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
+            goToParentNode();
         } else {
             throw new UnexpectedTokenException(current);
         }
@@ -148,7 +159,10 @@ public class Parser {
     private void arrayDec() throws UnexpectedTokenException, IOException {
         if (current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LBRACKET) {
             current = lexer.nextToken();
-            checkTerminal(current instanceof IntegerLiteral);
+            int dim = Integer.parseInt(checkTerminal(current instanceof IntegerLiteral).getValue());
+            if (dim < 0)
+                throw new UnexpectedTokenException("Negative array length initializer at line: " + current.getLine());
+            ((Variable) currentNode).addDimension(dim);
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RBRACKET);
             arrayDec();
         } else if (current instanceof Symbol && (((Symbol) current).getSymbol() == Symbols.COMMA
@@ -174,8 +188,16 @@ public class Parser {
 
     private void varList() throws UnexpectedTokenException, IOException {
         if (current instanceof Identifier) {
+            String name = current.getValue();
             current = lexer.nextToken();
+            addNode(new Variable((VarList) currentNode, name));
+            try {
+                SymbolTable.getInstance().add(currentNode);
+            } catch (DuplicateDefinitionException e) {
+                throw new UnexpectedTokenException(e.getMessage() + " at line: " + current.getLine());
+            }
             arrayDec();
+            goToParentNode();
             moreDec();
         } else {
             throw new UnexpectedTokenException(current);
@@ -242,11 +264,23 @@ public class Parser {
 
     private void e() throws UnexpectedTokenException, IOException {
         if (isType(current)) {
+            Types type = Types.parse(current.getValue());
             current = lexer.nextToken();
-            checkTerminal(current instanceof Identifier);
+            String name = checkTerminal(current instanceof Identifier).getValue();
+            addNode(new VariableDeclaration(currentNode));
+            addNode(new VarList((VariableDeclaration) currentNode, type));
+            addNode(new Variable((VarList) currentNode, name));
+            try {
+                SymbolTable.getInstance().add(currentNode);
+            } catch (DuplicateDefinitionException e) {
+                throw new UnexpectedTokenException(e.getMessage() + " at line: " + current.getLine());
+            }
             arrayDec();
+            goToParentNode();
             moreDec();
+            goToParentNode();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
+            goToParentNode();
             e();
         } else if (current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LBRACE) {
             block();

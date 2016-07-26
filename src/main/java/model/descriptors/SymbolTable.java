@@ -58,7 +58,8 @@ public final class SymbolTable {
                     throw new DuplicateDefinitionException(((Variable) node).getName());
                 getTable().add(new GlobalDescriptor(((Variable) node), getCurrentLevel()));
             } else {
-                if (getLocal(((Variable) node).getName()).isPresent())
+                if (getLocal(((Variable) node).getName()).isPresent() ||
+                    getParameter(((Variable) node).getName()).isPresent())
                     throw new DuplicateDefinitionException(((Variable) node).getName());
                 getTable().add(new LocalDescriptor(((Variable) node), getCurrentLevel()));
             }
