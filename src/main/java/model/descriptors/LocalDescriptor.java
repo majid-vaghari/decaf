@@ -1,12 +1,17 @@
 package model.descriptors;
 
-import model.ast.Node;
+import model.ast.Variable;
 
 /**
  * Created by Majid Vaghari on 7/22/2016.
  */
 public class LocalDescriptor extends AbstractDescriptor {
-    public LocalDescriptor(String name, int level, Node declaration) {
-        super(name, level, declaration);
+    public LocalDescriptor(Variable declaration, int level) {
+        super(declaration, level);
+    }
+
+    @Override
+    public String getId() {
+        return ((Variable) getDeclaration()).getName();
     }
 }

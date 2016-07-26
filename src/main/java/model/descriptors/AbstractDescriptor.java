@@ -6,19 +6,12 @@ import model.ast.Node;
  * Created by Majid Vaghari on 7/25/2016.
  */
 public abstract class AbstractDescriptor implements Descriptor {
-    private String name;
-    private int    level;
-    private Node   declaration;
+    private Node declaration;
+    private int  level;
 
-    public AbstractDescriptor(String name, int level, Node declaration) {
-        this.name = name;
-        this.level = level;
+    public AbstractDescriptor(Node declaration, int level) {
         this.declaration = declaration;
-    }
-
-    @Override
-    public String getId() {
-        return name;
+        this.level = level;
     }
 
     @Override

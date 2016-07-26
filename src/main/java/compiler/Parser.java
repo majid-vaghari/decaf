@@ -66,9 +66,11 @@ public class Parser {
         return isType(token) || token instanceof Keyword && ((Keyword) token).getKeyword() == Keywords.VOID;
     }
 
-    private void checkTerminal(boolean predicate) throws UnexpectedTokenException, IOException {
+    private Token checkTerminal(boolean predicate) throws UnexpectedTokenException, IOException {
         if (predicate) {
+            Token returnValue = current;
             current = lexer.nextToken();
+            return returnValue;
         } else {
             throw new UnexpectedTokenException(current);
         }
@@ -89,23 +91,11 @@ public class Parser {
         if (isType(current)) {
             Types type = Types.parse(current.getValue());
             current = lexer.nextToken();
-            String name;
-            if (current instanceof Identifier) {
-                name = current.getValue();
-                current = lexer.nextToken();
-            } else {
-                throw new UnexpectedTokenException(current);
-            }
+            String name = checkTerminal(current instanceof Identifier).getValue();
             afterId(type, name);
         } else if (current instanceof Keyword && ((Keyword) current).getKeyword() == Keywords.VOID) {
             current = lexer.nextToken();
-            String name;
-            if (current instanceof Identifier) {
-                name = current.getValue();
-                current = lexer.nextToken();
-            } else {
-                throw new UnexpectedTokenException(current);
-            }
+            String name = checkTerminal(current instanceof Identifier).getValue();
             addNode(new Function(currentNode, Types.VOID, name));
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LPAREN);
             args();
@@ -189,8 +179,9 @@ public class Parser {
 
     private void argList() throws UnexpectedTokenException, IOException {
         if (isType(current)) {
+            Types type = Types.parse(current.getValue());
             current = lexer.nextToken();
-            checkTerminal(current instanceof Identifier);
+            String name = checkTerminal(current instanceof Identifier).getValue();
             moreArg();
         } else {
             throw new UnexpectedTokenException(current);
