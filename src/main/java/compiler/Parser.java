@@ -388,8 +388,9 @@ public class Parser {
             goToParentNode();
             final Types declaredType = ((WriteStatement) currentNode).getType();
             if (exp.getType() != null && exp.getType() != declaredType)
-                throw new UnexpectedTokenException("Type mismatch: " + exp.getType() + " and " + declaredType +
-                                                   " at line: " + current.getLine());
+                throw new UnexpectedTokenException("Types: " + exp.getType().toString().toLowerCase() +
+                                                   " and " + declaredType.toString().toLowerCase() +
+                                                   " don't match at line: " + current.getLine());
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
             goToParentNode();
             e();
@@ -430,8 +431,9 @@ public class Parser {
                 final Types declaredType = ((VarList) ((AssignStatement) currentNode).getVariableDeclaration
                         ().getParent()).getType();
                 if (exp.getType() != null && exp.getType() != declaredType)
-                    throw new UnexpectedTokenException("Type mismatch: " + exp.getType() + " and " + declaredType +
-                                                       " at line: " + current.getLine());
+                    throw new UnexpectedTokenException("Types: " + exp.getType().toString().toLowerCase() +
+                                                       " and " + declaredType.toString().toLowerCase() +
+                                                       " don't match at line: " + current.getLine());
                 checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
                 goToParentNode();
             }
@@ -827,10 +829,14 @@ public class Parser {
         if (current instanceof Symbol
             && (((Symbol) current).getSymbol() == Symbols.NOT || ((Symbol) current).getSymbol() == Symbols.MINUS)) {
             current = lexer.nextToken();
+
+            /*
             if (((Symbol) current).getSymbol() == Symbols.NOT)
                 addNode(new Expression(currentNode, Symbols.NOT));
             else
                 addNode(new Expression(currentNode, Symbols.MINUS));
+                */
+            addNode(new Expression(currentNode));
             exp6();
             goToParentNode();
             // TODO <exp6> : !<exp6> | - <exp6>
@@ -854,9 +860,15 @@ public class Parser {
 
     private void exp7() throws UnexpectedTokenException, IOException {
         if (current instanceof Identifier) {
+            final Variable originalDeclaration = findVariable(current.getValue());
             addNode(new Variable(currentNode));
             current = lexer.nextToken();
             goToParentNode();
+            try {
+                ((Expression) currentNode).setType(((VarList) originalDeclaration.getParent()).getType());
+            } catch (TypeMismatchException e) {
+                throw new UnexpectedTokenException(e.getMessage() + " at line: " + current.getLine());
+            }
             addNode(new Expression(currentNode));
             exp71();
             goToParentNode();
