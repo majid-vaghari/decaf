@@ -70,10 +70,11 @@ public final class SymbolTable {
         }
     }
 
-    public Optional<Descriptor> getFunction(String id) {
+    public Optional<FunctionDescriptor> getFunction(String id) {
         return getTable().stream()
                          .filter(e -> e.getId().equals(id))
                          .filter(e -> e instanceof FunctionDescriptor)
+                         .map(e -> (FunctionDescriptor) e)
                          .findAny();
     }
 
@@ -81,24 +82,27 @@ public final class SymbolTable {
         return level;
     }
 
-    public Optional<Descriptor> getGlobal(String id) {
+    public Optional<GlobalDescriptor> getGlobal(String id) {
         return getTable().stream()
                          .filter(e -> e.getId().equals(id))
                          .filter(e -> e instanceof GlobalDescriptor)
+                         .map(e -> (GlobalDescriptor) e)
                          .findAny();
     }
 
-    public Optional<Descriptor> getLocal(String id) {
+    public Optional<LocalDescriptor> getLocal(String id) {
         return getTable().stream()
                          .filter(e -> e.getId().equals(id))
                          .filter(e -> e instanceof LocalDescriptor)
+                         .map(e -> ((LocalDescriptor) e))
                          .findAny();
     }
 
-    public Optional<Descriptor> getParameter(String id) {
+    public Optional<ParameterDescriptor> getParameter(String id) {
         return getTable().stream()
                          .filter(e -> e.getId().equals(id))
                          .filter(e -> e instanceof ParameterDescriptor)
+                         .map(e -> ((ParameterDescriptor) e))
                          .findAny();
     }
 }

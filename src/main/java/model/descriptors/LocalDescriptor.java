@@ -12,6 +12,11 @@ public class LocalDescriptor extends AbstractDescriptor {
 
     @Override
     public String getId() {
-        return ((Variable) getDeclaration()).getName();
+        return getDeclaration().getName();
+    }
+
+    @Override
+    public Variable getDeclaration() {
+        return (Variable) super.getDeclaration();
     }
 }

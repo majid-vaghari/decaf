@@ -12,6 +12,11 @@ public class FunctionDescriptor extends AbstractDescriptor {
 
     @Override
     public String getId() {
-        return ((Function) getDeclaration()).getName();
+        return getDeclaration().getName();
+    }
+
+    @Override
+    public Function getDeclaration() {
+        return (Function) super.getDeclaration();
     }
 }

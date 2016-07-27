@@ -8,7 +8,7 @@ import model.Symbols;
 public class Expression extends AbstractNode {
     private Symbols operation;
 
-    public Expression(Expression parent) {
+    public Expression(Node parent) {
         super(parent);
     }
 

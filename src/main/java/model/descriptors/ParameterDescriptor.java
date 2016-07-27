@@ -12,6 +12,11 @@ public class ParameterDescriptor extends AbstractDescriptor {
 
     @Override
     public String getId() {
-        return ((Parameter) getDeclaration()).getName();
+        return getDeclaration().getName();
+    }
+
+    @Override
+    public Parameter getDeclaration() {
+        return (Parameter) super.getDeclaration();
     }
 }

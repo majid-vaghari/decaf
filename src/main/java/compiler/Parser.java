@@ -2,12 +2,12 @@ package compiler;
 
 import model.*;
 import model.ast.*;
-import model.descriptors.DuplicateDefinitionException;
-import model.descriptors.SymbolTable;
+import model.descriptors.*;
 import model.type.Types;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * Created by Majid Vaghari on 5/29/2016.
@@ -159,7 +159,7 @@ public class Parser {
     private void arrayDec() throws UnexpectedTokenException, IOException {
         if (current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LBRACKET) {
             current = lexer.nextToken();
-            int dim = Integer.parseInt(checkTerminal(current instanceof IntegerLiteral).getValue());
+            int dim = Integer.decode(checkTerminal(current instanceof IntegerLiteral).getValue());
             if (dim < 0)
                 throw new UnexpectedTokenException("Negative array length initializer at line: " + current.getLine());
             ((Variable) currentNode).addDimension(dim);
@@ -291,7 +291,9 @@ public class Parser {
             current = lexer.nextToken();
             addNode(new IfStatement((Block) currentNode));
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LPAREN);
-            expr(); // TODO
+            addNode(new Expression(currentNode));
+            expr();
+            goToParentNode();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RPAREN);
             SymbolTable.getInstance().openScope();
             block();
@@ -303,7 +305,9 @@ public class Parser {
             current = lexer.nextToken();
             addNode(new WhileStatement((Block) currentNode));
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LPAREN);
+            addNode(new Expression(currentNode));
             expr();
+            goToParentNode();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RPAREN);
             SymbolTable.getInstance().openScope();
             block();
@@ -316,7 +320,9 @@ public class Parser {
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LPAREN);
             assignment();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
+            addNode(new Expression(currentNode));
             expr();
+            goToParentNode();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
             assignment();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RPAREN);
@@ -365,18 +371,20 @@ public class Parser {
                                                   || ((Keyword) current).getKeyword() == Keywords.WRITEFLOAT
                                                   || ((Keyword) current).getKeyword() == Keywords.WRITEINT)) {
             switch (((Keyword) current).getKeyword()) {
-                case READCHAR:
+                case WRITECHAR:
                     addNode(new WriteStatement((Block) currentNode, Types.CHARACTER));
                     break;
-                case READFLOAT:
+                case WRITEFLOAT:
                     addNode(new WriteStatement((Block) currentNode, Types.FLOAT));
                     break;
-                case READINT:
+                case WRITEINT:
                     addNode(new WriteStatement(((Block) currentNode), Types.INTEGER));
                     break;
             }
             current = lexer.nextToken();
+            addNode(new Expression(currentNode));
             expr();
+            goToParentNode();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
             goToParentNode();
             e();
@@ -395,9 +403,10 @@ public class Parser {
     private void e2(String name) throws UnexpectedTokenException, IOException {
         if (current instanceof Symbol) {
             if (((Symbol) current).getSymbol() == Symbols.LPAREN) {
-                if (!SymbolTable.getInstance().getFunction(name).isPresent())
+                final Optional<FunctionDescriptor> function = SymbolTable.getInstance().getFunction(name);
+                if (!function.isPresent())
                     throw new UnexpectedTokenException("Undefined function " + name + " at line: " + current.getLine());
-                addNode(new MethodCall(currentNode));
+                addNode(new MethodCall(currentNode, function.get().getDeclaration()));
                 current = lexer.nextToken();
                 i();
                 checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RPAREN);
@@ -405,10 +414,15 @@ public class Parser {
                 goToParentNode();
             } else if (((Symbol) current).getSymbol() == Symbols.LBRACKET
                        || ((Symbol) current).getSymbol() == Symbols.EQ) {
+                final Variable originalDeclaration = findVariable(name);
+                addNode(new AssignStatement((Block) currentNode, originalDeclaration));
                 k();
                 checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.EQ);
+                addNode(new Expression(currentNode));
                 expr();
+                goToParentNode();
                 checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
+                goToParentNode();
             }
         } else {
             throw new UnexpectedTokenException(current);
@@ -419,7 +433,9 @@ public class Parser {
         if ((current instanceof Symbol
              && (((Symbol) current).getSymbol() == Symbols.NOT || ((Symbol) current).getSymbol() == Symbols.MINUS))
             || current instanceof Literal || current instanceof Identifier) {
+            addNode(new Expression(currentNode));
             expr();
+            goToParentNode();
         } else if (current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON
                    || current == null) {
             // do nothing
@@ -458,12 +474,30 @@ public class Parser {
 
     private void assignment() throws UnexpectedTokenException, IOException {
         if (current instanceof Identifier) {
+            final Variable originalDeclaration = findVariable(current.getValue());
+            addNode(new AssignStatement((Block) currentNode, originalDeclaration));
             location();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.EQ);
+            addNode(new Expression(currentNode));
             expr();
+            goToParentNode();
+            goToParentNode();
         } else {
             throw new UnexpectedTokenException(current);
         }
+    }
+
+    private Variable findVariable(String name) throws UnexpectedTokenException {
+        Optional<LocalDescriptor>  localOptional  = SymbolTable.getInstance().getLocal(name);
+        Optional<GlobalDescriptor> globalOptional = SymbolTable.getInstance().getGlobal(name);
+        Variable                   originalDeclaration;
+        if (localOptional.isPresent())
+            originalDeclaration = localOptional.get().getDeclaration();
+        else if (globalOptional.isPresent())
+            originalDeclaration = globalOptional.get().getDeclaration();
+        else
+            throw new UnexpectedTokenException("Undefined variable " + name + " at line: " + current.getLine());
+        return originalDeclaration;
     }
 
     private void i() throws UnexpectedTokenException, IOException {
@@ -482,7 +516,9 @@ public class Parser {
         if (current instanceof Symbol
             && (((Symbol) current).getSymbol() == Symbols.NOT || ((Symbol) current).getSymbol() == Symbols.MINUS)
             || current instanceof Literal || current instanceof Identifier) {
+            addNode(new Expression(currentNode));
             expr();
+            goToParentNode();
             j();
         } else {
             throw new UnexpectedTokenException(current);
@@ -511,9 +547,16 @@ public class Parser {
 
     private void k() throws UnexpectedTokenException, IOException {
         if (current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LBRACKET) {
+            if (!(currentNode.getChildren().size() <
+                  ((AssignStatement) currentNode).getVariableDeclaration().getDimensions().size()))
+                throw new UnexpectedTokenException("Array dimension doesn't match: " +
+                                                   ((AssignStatement) currentNode).getVariableDeclaration().getName() +
+                                                   " at line: " + current.getLine());
             current = lexer.nextToken();
+            addNode(new Expression(currentNode));
             expr();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RBRACKET);
+            goToParentNode();
             k();
         } else if (current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.EQ || current == null
                    || current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON
@@ -528,10 +571,11 @@ public class Parser {
     }
 
     private void expr() throws UnexpectedTokenException, IOException {
-        if (current instanceof Symbol
-            && (((Symbol) current).getSymbol() == Symbols.NOT || ((Symbol) current).getSymbol() == Symbols.MINUS)
-            || current instanceof Literal || current instanceof Identifier
-            || ((Symbol) current).getSymbol() == Symbols.LPAREN) {
+        if ((current instanceof Symbol &&
+             (((Symbol) current).getSymbol() == Symbols.NOT ||
+              ((Symbol) current).getSymbol() == Symbols.MINUS ||
+              ((Symbol) current).getSymbol() == Symbols.LPAREN)) ||
+            current instanceof Literal || current instanceof Identifier) {
             exp1();
             exp0();
         }
@@ -549,7 +593,9 @@ public class Parser {
     private void exp0() throws UnexpectedTokenException, IOException {
         if (current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.OROR) {
             current = lexer.nextToken();
+            addNode(new Expression(currentNode));
             expr();
+            goToParentNode();
         } else if (current instanceof Symbol && (((Symbol) current).getSymbol() == Symbols.RPAREN
                                                  || ((Symbol) current).getSymbol() == Symbols.RBRACKET ||
                                                  ((Symbol) current).getSymbol() == Symbols.COMMA
@@ -578,7 +624,9 @@ public class Parser {
         if (current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.ANDAND) {
             current = lexer.nextToken();
             // exp1();
+            addNode(new Expression(currentNode));
             expr();
+            goToParentNode();
         } else if (current instanceof Symbol && (((Symbol) current).getSymbol() == Symbols.RPAREN
                                                  || ((Symbol) current).getSymbol() == Symbols.RBRACKET ||
                                                  ((Symbol) current).getSymbol() == Symbols.COMMA
@@ -609,7 +657,9 @@ public class Parser {
                                           || ((Symbol) current).getSymbol() == Symbols.NOTEQ)) {
             current = lexer.nextToken();
             // exp2();
+            addNode(new Expression(currentNode));
             expr();
+            goToParentNode();
         } else if (current instanceof Symbol && (((Symbol) current).getSymbol() == Symbols.RPAREN
                                                  || ((Symbol) current).getSymbol() == Symbols.RBRACKET ||
                                                  ((Symbol) current).getSymbol() == Symbols.COMMA
@@ -643,7 +693,9 @@ public class Parser {
                                           || ((Symbol) current).getSymbol() == Symbols.GTEQ)) {
             current = lexer.nextToken();
             // exp3();
+            addNode(new Expression(currentNode));
             expr();
+            goToParentNode();
         } else if (current instanceof Symbol && (((Symbol) current).getSymbol() == Symbols.RPAREN
                                                  || ((Symbol) current).getSymbol() == Symbols.RBRACKET ||
                                                  ((Symbol) current).getSymbol() == Symbols.COMMA
@@ -677,7 +729,9 @@ public class Parser {
                                           || ((Symbol) current).getSymbol() == Symbols.MINUS)) {
             current = lexer.nextToken();
             // exp4();
+            addNode(new Expression(currentNode));
             expr();
+            goToParentNode();
         } else if (current instanceof Symbol && (((Symbol) current).getSymbol() == Symbols.RPAREN
                                                  || ((Symbol) current).getSymbol() == Symbols.RBRACKET ||
                                                  ((Symbol) current).getSymbol() == Symbols.COMMA
@@ -715,7 +769,9 @@ public class Parser {
                                           ((Symbol) current).getSymbol() == Symbols.MOD)) {
             current = lexer.nextToken();
             // exp5();
+            addNode(new Expression(currentNode));
             expr();
+            goToParentNode();
         } else if (current instanceof Symbol && (((Symbol) current).getSymbol() == Symbols.RPAREN
                                                  || ((Symbol) current).getSymbol() == Symbols.RBRACKET ||
                                                  ((Symbol) current).getSymbol() == Symbols.COMMA
@@ -776,7 +832,9 @@ public class Parser {
             // injake be tah reside hamin meghdar va type e literalero mizarim
         } else if (current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LPAREN) {
             current = lexer.nextToken();
+            addNode(new Expression(currentNode));
             expr();
+            goToParentNode();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RPAREN);
             // TODO
             // <exp7> : (<expr>)
