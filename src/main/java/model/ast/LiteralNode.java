@@ -12,16 +12,17 @@ public class LiteralNode extends Expression {
         super(parent);
     }
 
-    public LiteralNode(Expression parent, Literal literal) {
+    public LiteralNode(Expression parent, Literal literal) throws TypeMismatchException {
         super(parent);
-        this.literal = literal;
+        setLiteral(literal);
     }
 
     public Literal getLiteral() {
         return literal;
     }
 
-    public void setLiteral(Literal literal) {
+    public void setLiteral(Literal literal) throws TypeMismatchException {
         this.literal = literal;
+        super.setType(literal.getType());
     }
 }
