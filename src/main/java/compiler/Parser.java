@@ -133,6 +133,9 @@ public class Parser {
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RPAREN);
             block();
             SymbolTable.getInstance().closeScope();
+            if (!((Function) currentNode).doesReturn())
+                throw new UnexpectedTokenException("Method " + ((Function) currentNode).getName() + " does not return" +
+                                                   " at line: " + current.getLine());
             goToParentNode();
         } else if (current instanceof Symbol && (((Symbol) current).getSymbol() == Symbols.LBRACKET
                                                  || ((Symbol) current).getSymbol() == Symbols.COMMA
@@ -317,6 +320,7 @@ public class Parser {
         } else if (current instanceof Keyword && ((Keyword) current).getKeyword() == Keywords.FOR) {
             current = lexer.nextToken();
             addNode(new ForStatement((Block) currentNode));
+            addNode(new Block(currentNode));
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LPAREN);
             assignment();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
@@ -326,6 +330,7 @@ public class Parser {
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
             assignment();
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.RPAREN);
+            goToParentNode();
             SymbolTable.getInstance().openScope();
             block();
             SymbolTable.getInstance().closeScope();
@@ -869,9 +874,9 @@ public class Parser {
             } catch (TypeMismatchException e) {
                 throw new UnexpectedTokenException(e.getMessage() + " at line: " + current.getLine());
             }
-            addNode(new Expression(currentNode));
-            exp71();
-            goToParentNode();
+//            addNode(new Expression(currentNode));
+//            exp71();
+//            goToParentNode();
             // TODO
             // <exp7> : <id> <exp71>
             // Type <exp7> = Type <exp71>
