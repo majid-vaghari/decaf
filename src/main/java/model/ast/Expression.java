@@ -35,5 +35,7 @@ public class Expression extends AbstractNode {
         if (this.type != null && this.type != type)
             throw new TypeMismatchException(this.type, type);
         this.type = type;
+        if (getParent() instanceof Expression)
+            ((Expression) getParent()).setType(type);
     }
 }

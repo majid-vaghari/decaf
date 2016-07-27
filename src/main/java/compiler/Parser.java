@@ -139,7 +139,7 @@ public class Parser {
                                                  || ((Symbol) current).getSymbol() == Symbols.SEMICOLON)) {
             addNode(new VariableDeclaration(currentNode));
             addNode(new VarList((VariableDeclaration) currentNode, type));
-            addNode(new Variable((VarList) currentNode, name));
+            addNode(new Variable(currentNode, name));
             try {
                 SymbolTable.getInstance().add(currentNode);
             } catch (DuplicateDefinitionException e) {
@@ -190,7 +190,7 @@ public class Parser {
         if (current instanceof Identifier) {
             String name = current.getValue();
             current = lexer.nextToken();
-            addNode(new Variable((VarList) currentNode, name));
+            addNode(new Variable(currentNode, name));
             try {
                 SymbolTable.getInstance().add(currentNode);
             } catch (DuplicateDefinitionException e) {
@@ -269,7 +269,7 @@ public class Parser {
             String name = checkTerminal(current instanceof Identifier).getValue();
             addNode(new VariableDeclaration(currentNode));
             addNode(new VarList((VariableDeclaration) currentNode, type));
-            addNode(new Variable((VarList) currentNode, name));
+            addNode(new Variable(currentNode, name));
             try {
                 SymbolTable.getInstance().add(currentNode);
             } catch (DuplicateDefinitionException e) {
@@ -384,7 +384,12 @@ public class Parser {
             current = lexer.nextToken();
             addNode(new Expression(currentNode));
             expr();
+            Expression exp = (Expression) currentNode;
             goToParentNode();
+            final Types declaredType = ((WriteStatement) currentNode).getType();
+            if (exp.getType() != null && exp.getType() != declaredType)
+                throw new UnexpectedTokenException("Type mismatch: " + exp.getType() + " and " + declaredType +
+                                                   " at line: " + current.getLine());
             checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
             goToParentNode();
             e();
@@ -420,7 +425,13 @@ public class Parser {
                 checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.EQ);
                 addNode(new Expression(currentNode));
                 expr();
+                Expression exp = (Expression) currentNode;
                 goToParentNode();
+                final Types declaredType = ((VarList) ((AssignStatement) currentNode).getVariableDeclaration
+                        ().getParent()).getType();
+                if (exp.getType() != null && exp.getType() != declaredType)
+                    throw new UnexpectedTokenException("Type mismatch: " + exp.getType() + " and " + declaredType +
+                                                       " at line: " + current.getLine());
                 checkTerminal(current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.SEMICOLON);
                 goToParentNode();
             }
@@ -571,13 +582,16 @@ public class Parser {
     }
 
     private void expr() throws UnexpectedTokenException, IOException {
-        if ((current instanceof Symbol &&
-             (((Symbol) current).getSymbol() == Symbols.NOT ||
-              ((Symbol) current).getSymbol() == Symbols.MINUS ||
-              ((Symbol) current).getSymbol() == Symbols.LPAREN)) ||
-            current instanceof Literal || current instanceof Identifier) {
+        if ((current instanceof Symbol && (((Symbol) current).getSymbol() == Symbols.NOT
+                                           || ((Symbol) current).getSymbol() == Symbols.MINUS ||
+                                           ((Symbol) current).getSymbol() == Symbols.LPAREN))
+            || current instanceof Literal || current instanceof Identifier) {
+            addNode(new Expression(currentNode));
             exp1();
+            goToParentNode();
+            addNode(new Expression(currentNode));
             exp0();
+            goToParentNode();
         }
         /*
          * else if (current instanceof Symbol && ((Symbol) current).getSymbol()
@@ -612,9 +626,12 @@ public class Parser {
             && (((Symbol) current).getSymbol() == Symbols.NOT || ((Symbol) current).getSymbol() == Symbols.MINUS)
             || current instanceof Literal || current instanceof Identifier
             || ((Symbol) current).getSymbol() == Symbols.LPAREN) {
-
+            addNode(new Expression(currentNode));
             exp2();
+            goToParentNode();
+            addNode(new Expression(currentNode));
             exp10();
+            goToParentNode();
         } else {
             throw new UnexpectedTokenException(current);
         }
@@ -644,9 +661,12 @@ public class Parser {
             && (((Symbol) current).getSymbol() == Symbols.NOT || ((Symbol) current).getSymbol() == Symbols.MINUS)
             || current instanceof Literal || current instanceof Identifier
             || ((Symbol) current).getSymbol() == Symbols.LPAREN) {
-
+            addNode(new Expression(currentNode));
             exp3();
+            goToParentNode();
+            addNode(new Expression(currentNode));
             exp20();
+            goToParentNode();
         } else {
             throw new UnexpectedTokenException(current);
         }
@@ -678,9 +698,12 @@ public class Parser {
             && (((Symbol) current).getSymbol() == Symbols.NOT || ((Symbol) current).getSymbol() == Symbols.MINUS)
             || current instanceof Literal || current instanceof Identifier
             || ((Symbol) current).getSymbol() == Symbols.LPAREN) {
-
+            addNode(new Expression(currentNode));
             exp4();
+            goToParentNode();
+            addNode(new Expression(currentNode));
             exp30();
+            goToParentNode();
         } else {
             throw new UnexpectedTokenException(current);
         }
@@ -716,9 +739,12 @@ public class Parser {
             && (((Symbol) current).getSymbol() == Symbols.NOT || ((Symbol) current).getSymbol() == Symbols.MINUS)
             || current instanceof Literal || current instanceof Identifier
             || ((Symbol) current).getSymbol() == Symbols.LPAREN) {
-
+            addNode(new Expression(currentNode));
             exp5();
+            goToParentNode();
+            addNode(new Expression(currentNode));
             exp40();
+            goToParentNode();
         } else {
             throw new UnexpectedTokenException(current);
         }
@@ -756,8 +782,12 @@ public class Parser {
             && (((Symbol) current).getSymbol() == Symbols.NOT || ((Symbol) current).getSymbol() == Symbols.MINUS)
             || current instanceof Literal || current instanceof Identifier
             || ((Symbol) current).getSymbol() == Symbols.LPAREN) {
+            addNode(new Expression(currentNode));
             exp6();
+            goToParentNode();
+            addNode(new Expression(currentNode));
             exp50();
+            goToParentNode();
         } else {
             throw new UnexpectedTokenException(current);
         }
@@ -797,16 +827,26 @@ public class Parser {
         if (current instanceof Symbol
             && (((Symbol) current).getSymbol() == Symbols.NOT || ((Symbol) current).getSymbol() == Symbols.MINUS)) {
             current = lexer.nextToken();
+            if (((Symbol) current).getSymbol() == Symbols.NOT)
+                addNode(new Expression(currentNode, Symbols.NOT));
+            else
+                addNode(new Expression(currentNode, Symbols.MINUS));
             exp6();
-            //TODO <exp6> : !<exp6> | - <exp6>
-            // age not umade typesh mishe hamun type e bachash va valuesh mishe not e hasele exp6
-            // age - umade typesh again mishe type e hasele exp6 va valuesh mishe manfie oon
+            goToParentNode();
+            // TODO <exp6> : !<exp6> | - <exp6>
+            // age not umade typesh mishe hamun type e bachash va valuesh mishe
+            // not e hasele exp6
+            // age - umade typesh again mishe type e hasele exp6 va valuesh
+            // mishe manfie oon
         } else if (current instanceof Literal || current instanceof Identifier
                    || current instanceof Symbol && ((Symbol) current).getSymbol() == Symbols.LPAREN) {
+            addNode(new Expression(currentNode));
             exp7();
-            //TODO <exp6> : <exp7>
-            // age bere be in be olaviate avval mirese yani ya meghdare yechizio mikhad yani ya meghdare ye variable
-            //ya ye khune array ya hasele method ya meghdare tooye parantez
+            goToParentNode();
+            // TODO <exp6> : <exp7>
+            // age bere be in be olaviate avval mirese yani ya meghdare yechizio
+            // mikhad yani ya meghdare ye variable
+            // ya ye khune array ya hasele method ya meghdare tooye parantez
         } else {
             throw new UnexpectedTokenException(current);
         }
@@ -814,8 +854,12 @@ public class Parser {
 
     private void exp7() throws UnexpectedTokenException, IOException {
         if (current instanceof Identifier) {
+            addNode(new Variable(currentNode));
             current = lexer.nextToken();
+            goToParentNode();
+            addNode(new Expression(currentNode));
             exp71();
+            goToParentNode();
             // TODO
             // <exp7> : <id> <exp71>
             // Type <exp7> = Type <exp71>
@@ -824,6 +868,12 @@ public class Parser {
             // biabim. hala ya method calle ya meghdare ye variable ya ye khune
             // array
         } else if (current instanceof Literal) {
+            try {
+                addNode(new LiteralNode((Expression) currentNode, ((Literal) current)));
+            } catch (TypeMismatchException e) {
+                throw new UnexpectedTokenException(e.getMessage() + " at line: " + current.getLine());
+            }
+            goToParentNode();
             current = lexer.nextToken();
             // TODO
             // <exp7> : <Literal>

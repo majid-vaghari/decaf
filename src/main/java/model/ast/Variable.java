@@ -10,11 +10,11 @@ public class Variable extends AbstractNode {
     private String        name;
     private List<Integer> dimensions;
 
-    public Variable(VarList parent) {
+    public Variable(Node parent) {
         this(parent, null);
     }
 
-    public Variable(VarList parent, String name) {
+    public Variable(Node parent, String name) {
         super(parent);
         this.name = name;
         this.dimensions = new ArrayList<>();
